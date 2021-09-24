@@ -40,7 +40,8 @@ where
     P: Projection,
     <P as Projection>::SourceId: std::fmt::Debug,
     <P as Projection>::Event: std::fmt::Debug,
-    S: Subscription<SourceId = P::SourceId, Event = P::Event>,
+    <P as Projection>::Version: std::fmt::Debug,
+    S: Subscription<SourceId = P::SourceId, Event = P::Event, Version = P::Version>,
     // NOTE: these bounds are needed for anyhow::Error conversion.
     <P as Projection>::Error: StdError + Send + Sync + 'static,
     <S as Subscription>::Error: StdError + Send + Sync + 'static,

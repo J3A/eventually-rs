@@ -74,8 +74,8 @@ where
     Id: Hash + Eq,
 {
     global_offset: Arc<AtomicU32>,
-    tx: Sender<Persisted<Id, Event>>,
-    backend: Arc<RwLock<HashMap<Id, Vec<Persisted<Id, Event>>>>>,
+    tx: Sender<Persisted<Id, Event, u32>>,
+    backend: Arc<RwLock<HashMap<Id, Vec<Persisted<Id, Event, u32>>>>>,
 }
 
 impl<Id, Event> EventStore<Id, Event>
@@ -120,6 +120,7 @@ where
     type SourceId = Id;
     type Event = Event;
     type Error = LaggedError;
+    type Version = u32;
 
     fn subscribe_all(&self) -> eventually_core::subscription::EventStream<Self> {
         // Create a new Receiver from the store Sender.
@@ -144,13 +145,14 @@ where
     type SourceId = Id;
     type Event = Event;
     type Error = ConflictError;
+    type Version = u32;
 
     fn append(
         &mut self,
         id: Self::SourceId,
-        version: Expected,
+        version: Expected<Self::Version>,
         events: Vec<Self::Event>,
-    ) -> BoxFuture<Result<u32, Self::Error>> {
+    ) -> BoxFuture<Result<Self::Version, Self::Error>> {
         #[cfg(feature = "with-tracing")]
         let span = tracing::info_span!(
             "EventStore::append",
@@ -174,7 +176,7 @@ where
                 }
             }
 
-            let mut persisted_events: Vec<Persisted<Id, Event>> =
+            let mut persisted_events: Vec<Persisted<Id, Event, Self::Version>> =
                 into_persisted_events(expected, id.clone(), events)
                     .into_iter()
                     .map(|event| {
@@ -263,7 +265,7 @@ where
             select = ?select
         );
 
-        let mut events: Vec<Persisted<Id, Event>> = self
+        let mut events: Vec<Persisted<Id, Event, Self::Version>> = self
             .backend
             .read()
             .values()
@@ -310,7 +312,7 @@ fn into_persisted_events<Id, T>(
     last_version: u32,
     id: Id,
     events: Vec<T>,
-) -> Vec<EventBuilderWithVersion<Id, T>>
+) -> Vec<EventBuilderWithVersion<Id, T, u32>>
 where
     Id: Clone,
 {
@@ -636,7 +638,7 @@ mod tests {
             .is_ok());
 
         // Stream from the start.
-        let result: anyhow::Result<Vec<Persisted<&str, Event>>> = store
+        let result: anyhow::Result<Vec<Persisted<&str, Event, u32>>> = store
             .stream_all(Select::All)
             .await
             .unwrap()
@@ -666,7 +668,7 @@ mod tests {
         );
 
         // Stream from a specified sequence number.
-        let result: anyhow::Result<Vec<Persisted<&str, Event>>> = store
+        let result: anyhow::Result<Vec<Persisted<&str, Event, u32>>> = store
             .stream_all(Select::From(2))
             .await
             .unwrap()
@@ -694,7 +696,7 @@ mod tests {
         store: &InMemoryStore<&'static str, Event>,
         id: &'static str,
         select: Select,
-    ) -> anyhow::Result<Vec<Persisted<&'static str, Event>>> {
+    ) -> anyhow::Result<Vec<Persisted<&'static str, Event, u32>>> {
         store
             .stream(id, select)
             .await

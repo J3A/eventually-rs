@@ -191,12 +191,19 @@ impl<SourceId, T, V> Deref for Persisted<SourceId, T, V> {
     }
 }
 
-impl<SourceId, T, V> Persisted<SourceId, T, V> {
+impl<SourceId, T, V> Persisted<SourceId, T, V>
+where
+    V: PartialOrd + Ord + Default,
+{
     /// Creates a new [`EventBuilder`](persistent::EventBuilder) from the
     /// provided Event value.
     #[inline]
-    pub fn from(source_id: SourceId, event: T) -> persistent::EventBuilder<SourceId, T> {
-        persistent::EventBuilder { source_id, event }
+    pub fn from(source_id: SourceId, event: T) -> persistent::EventBuilder<SourceId, T, V> {
+        persistent::EventBuilder {
+            source_id,
+            event,
+            version: Default::default(),
+        }
     }
 
     /// Returns the event sequence number.
@@ -223,27 +230,39 @@ impl<SourceId, T, V> Persisted<SourceId, T, V> {
 pub mod persistent {
     /// Creates a new [`Persisted`](super::Persisted) by wrapping an Event
     /// value.
-    pub struct EventBuilder<SourceId, T> {
+    pub struct EventBuilder<SourceId, T, V>
+    where
+        V: PartialOrd + Ord + Default,
+    {
         pub(super) event: T,
         pub(super) source_id: SourceId,
+        #[allow(dead_code)]
+        pub(super) version: V,
     }
 
-    impl<SourceId, T> From<(SourceId, T)> for EventBuilder<SourceId, T> {
+    impl<SourceId, T, V> From<(SourceId, T)> for EventBuilder<SourceId, T, V>
+    where
+        V: PartialOrd + Ord + Default,
+    {
         #[inline]
         fn from(value: (SourceId, T)) -> Self {
             let (source_id, event) = value;
-            Self { source_id, event }
+            Self {
+                source_id,
+                event,
+                version: Default::default(),
+            }
         }
     }
 
-    impl<SourceId, T> EventBuilder<SourceId, T> {
+    impl<SourceId, T, V> EventBuilder<SourceId, T, V>
+    where
+        V: PartialOrd + Ord + Default,
+    {
         /// Specifies the [`Persisted`](super::Persisted) version and moves to
         /// the next builder state.
         #[inline]
-        pub fn version<V: PartialOrd + Ord + Default>(
-            self,
-            value: V,
-        ) -> EventBuilderWithVersion<SourceId, T, V> {
+        pub fn version(self, value: V) -> EventBuilderWithVersion<SourceId, T, V> {
             EventBuilderWithVersion {
                 version: value,
                 event: self.event,
