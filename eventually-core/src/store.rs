@@ -30,7 +30,7 @@ pub enum Select {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Expected<V>
 where
-    V: PartialOrd + Ord + Default,
+    V: PartialOrd + Ord + Default + Copy,
 {
     /// Append events disregarding the current
     /// [`Aggregate`](super::aggregate::Aggregate) version.
@@ -86,7 +86,7 @@ pub trait EventStore {
     type Error: AppendError;
 
     /// Version type used by the [`EventStore`] for optimistic concurrency.
-    type Version: PartialOrd + Ord + Default;
+    type Version: PartialOrd + Ord + Default + Copy;
 
     /// Appends a new list of [`Event`](EventStore::Event)s to the Event Store,
     /// for the Source entity specified by
@@ -170,16 +170,11 @@ pub struct Persisted<SourceId, T, V> {
 
 impl<SourceId, T, V> Versioned<V> for Persisted<SourceId, T, V>
 where
-    V: PartialOrd + Ord + Default,
+    V: PartialOrd + Ord + Default + Copy,
 {
     #[inline]
     fn version(&self) -> V {
-        todo!()
-        // self.version
-    }
-
-    fn min_version(&self) -> V {
-        todo!()
+        self.version
     }
 }
 
@@ -193,7 +188,7 @@ impl<SourceId, T, V> Deref for Persisted<SourceId, T, V> {
 
 impl<SourceId, T, V> Persisted<SourceId, T, V>
 where
-    V: PartialOrd + Ord + Default,
+    V: PartialOrd + Ord + Default + Copy,
 {
     /// Creates a new [`EventBuilder`](persistent::EventBuilder) from the
     /// provided Event value.
@@ -232,7 +227,7 @@ pub mod persistent {
     /// value.
     pub struct EventBuilder<SourceId, T, V>
     where
-        V: PartialOrd + Ord + Default,
+        V: PartialOrd + Ord + Default + Copy,
     {
         pub(super) event: T,
         pub(super) source_id: SourceId,
@@ -242,7 +237,7 @@ pub mod persistent {
 
     impl<SourceId, T, V> From<(SourceId, T)> for EventBuilder<SourceId, T, V>
     where
-        V: PartialOrd + Ord + Default,
+        V: PartialOrd + Ord + Default + Copy,
     {
         #[inline]
         fn from(value: (SourceId, T)) -> Self {
@@ -257,7 +252,7 @@ pub mod persistent {
 
     impl<SourceId, T, V> EventBuilder<SourceId, T, V>
     where
-        V: PartialOrd + Ord + Default,
+        V: PartialOrd + Ord + Default + Copy,
     {
         /// Specifies the [`Persisted`](super::Persisted) version and moves to
         /// the next builder state.
@@ -286,7 +281,7 @@ pub mod persistent {
     /// Event value and its version.
     pub struct EventBuilderWithVersion<SourceId, T, V>
     where
-        V: PartialOrd + Ord + Default,
+        V: PartialOrd + Ord + Default + Copy,
     {
         version: V,
         event: T,
@@ -295,7 +290,7 @@ pub mod persistent {
 
     impl<SourceId, T, V> EventBuilderWithVersion<SourceId, T, V>
     where
-        V: PartialOrd + Ord + Default,
+        V: PartialOrd + Ord + Default + Copy,
     {
         /// Specifies the [`Persisted`](super::Persisted) sequence number and
         /// moves to the next builder state.
@@ -322,7 +317,7 @@ pub mod persistent {
         /// Specifies the [`Persisted`](super::Persisted) version and moves to
         /// the next builder state.
         #[inline]
-        pub fn version<V: PartialOrd + Ord + Default>(
+        pub fn version<V: PartialOrd + Ord + Default + Copy>(
             self,
             value: V,
         ) -> super::Persisted<SourceId, T, V> {

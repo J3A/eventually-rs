@@ -39,7 +39,7 @@ pub trait Projection {
     type Error;
 
     /// Version type used by the [`EventStore`] for optimistic concurrency.
-    type Version: PartialOrd + Ord + Default;
+    type Version: PartialOrd + Ord + Default + Copy;
 
     /// Updates the next value of the `Projection` using the provided event
     /// value.

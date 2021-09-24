@@ -109,14 +109,14 @@ where
     /// Builds a new [`AggregateRoot`] instance for the specified [`Aggregate`]
     /// [`Id`](Aggregate::Id).
     // #[inline]
-    pub fn build<V: PartialOrd + Ord + Default>(&self, id: T::Id) -> AggregateRoot<T, V> {
+    pub fn build<V: PartialOrd + Ord + Default + Copy>(&self, id: T::Id) -> AggregateRoot<T, V> {
         self.build_with_state(id, Default::default(), Default::default())
     }
 
     /// Builds a new [`AggregateRoot`] instance for the specified Aggregate
     /// with a specified [`State`](Aggregate::State) value.
     #[inline]
-    pub fn build_with_state<V: PartialOrd + Ord + Default>(
+    pub fn build_with_state<V: PartialOrd + Ord + Default + Copy>(
         &self,
         id: T::Id,
         version: V,
@@ -153,7 +153,7 @@ where
 pub struct AggregateRoot<T, V>
 where
     T: Aggregate + 'static,
-    V: PartialOrd + Ord + Default,
+    V: PartialOrd + Ord + Default + Copy,
 {
     id: T::Id,
     version: V,
@@ -171,7 +171,7 @@ where
 impl<T, V> PartialEq for AggregateRoot<T, V>
 where
     T: Aggregate,
-    V: PartialOrd + Ord + Default,
+    V: PartialOrd + Ord + Default + Copy,
 {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
@@ -182,23 +182,18 @@ where
 impl<T, V> Versioned<V> for AggregateRoot<T, V>
 where
     T: Aggregate,
-    V: PartialOrd + Ord + Default,
+    V: PartialOrd + Ord + Default + Copy,
 {
     #[inline]
     fn version(&self) -> V {
-        // self.version
-        todo!()
-    }
-
-    fn min_version(&self) -> V {
-        todo!()
+        self.version
     }
 }
 
 impl<T, V> AggregateRoot<T, V>
 where
     T: Aggregate,
-    V: PartialOrd + Ord + Default,
+    V: PartialOrd + Ord + Default + Copy,
 {
     /// Returns a reference to the Aggregate [`Id`](Aggregate::Id) that
     /// represents the entity wrapped by this [`AggregateRoot`] instance.
@@ -232,7 +227,7 @@ where
 impl<T, V> Deref for AggregateRoot<T, V>
 where
     T: Aggregate,
-    V: PartialOrd + Ord + Default,
+    V: PartialOrd + Ord + Default + Copy,
 {
     type Target = T::State;
 
@@ -247,7 +242,7 @@ where
     T::Event: Clone,
     T::State: Clone,
     T::Command: Debug,
-    V: PartialOrd + Ord + Default,
+    V: PartialOrd + Ord + Default + Copy,
 {
     /// Handles the submitted [`Command`](Aggregate::Command) using the
     /// [`Aggregate::handle`] method and updates the Aggregate
