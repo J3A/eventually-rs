@@ -97,6 +97,7 @@ where
     type SourceId = Id;
     type Event = Event;
     type Error = SubscriptionError;
+    type Version = u32;
 
     fn resume(&self) -> BoxFuture<SubscriptionResult<SubscriptionStream<Self>>> {
         let fut = async move {
@@ -114,7 +115,7 @@ where
                 })
                 .try_flatten()
                 .and_then(|entry| async move {
-                    Persisted::<Id, Event>::try_from(stream::ToPersisted::from(entry))
+                    Persisted::<Id, Event, u32>::try_from(stream::ToPersisted::from(entry))
                         .map_err(SubscriptionError::DecodeEvents)
                 })
                 .boxed())

@@ -71,6 +71,7 @@ where
     type SourceId = Id;
     type Event = Event;
     type Error = SubscriberError;
+    type Version = u32;
 
     fn subscribe_all(&self) -> SubscriberEventStream<Self> {
         #[derive(Deserialize)]
@@ -107,8 +108,8 @@ where
                         .map_err(SubscriberError::DecodeSourceId)?;
 
                     Ok(Persisted::from(source_id, msg.event)
-                        .sequence_number(msg.sequence_number)
-                        .version(msg.version))
+                        .version(msg.version)
+                        .sequence_number(msg.sequence_number))
                 }))
         };
 

@@ -146,10 +146,11 @@ async fn it_creates_persistent_subscription_successfully() {
         type SourceId = String;
         type Event = Event;
         type Error = std::convert::Infallible;
+        type Version = u32;
 
         async fn project(
             &mut self,
-            _event: Persisted<Self::SourceId, Self::Event>,
+            _event: Persisted<Self::SourceId, Self::Event, Self::Version>,
         ) -> Result<(), Self::Error> {
             self.0 += 1;
             Ok(())

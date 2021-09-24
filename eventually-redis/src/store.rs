@@ -99,11 +99,12 @@ where
     type SourceId = Id;
     type Event = Event;
     type Error = StoreError;
+    type Version = u32;
 
     fn append(
         &mut self,
         id: Self::SourceId,
-        version: Expected,
+        version: Expected<Self::Version>,
         events: Vec<Self::Event>,
     ) -> BoxFuture<StoreResult<u32>> {
         let fut = async move {
@@ -162,8 +163,8 @@ where
                     let version = stream::parse_version(&entry.id);
 
                     Ok(Persisted::from(id, event)
-                        .sequence_number(sequence_number)
-                        .version(version as u32))
+                        .version(version as u32)
+                        .sequence_number(sequence_number))
                 })
                 .boxed())
         };
@@ -186,7 +187,7 @@ where
             Ok(paginator
                 .map_err(StoreError::Stream)
                 .and_then(|entry| async move {
-                    Persisted::<Id, Event>::try_from(stream::ToPersisted::from(entry))
+                    Persisted::<Id, Event, u32>::try_from(stream::ToPersisted::from(entry))
                         .map_err(StoreError::DecodeEvents)
                 })
                 .boxed())

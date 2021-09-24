@@ -41,7 +41,7 @@ pub enum ToPersistedError {
     DecodeJSON(#[source] serde_json::Error),
 }
 
-impl<SourceId, Event> TryFrom<ToPersisted> for Persisted<SourceId, Event>
+impl<SourceId, Event> TryFrom<ToPersisted> for Persisted<SourceId, Event, u32>
 where
     SourceId: TryFrom<String> + Eq + Clone + Send + Sync,
     <SourceId as TryFrom<String>>::Error: Error + Send + Sync + 'static,
@@ -70,8 +70,8 @@ where
         let sequence_number = parse_version(&entry.id);
 
         Ok(Persisted::from(source_id, event)
-            .sequence_number(sequence_number as u32)
-            .version(version))
+            .version(version)
+            .sequence_number(sequence_number as u32))
     }
 }
 
