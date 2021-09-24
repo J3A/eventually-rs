@@ -88,7 +88,7 @@ pub trait EventStore {
     /// operations.
     type Error: AppendError;
 
-    /// Version type used by the [`EventStore`] for optimistic concurrency.
+    /// Version type used for optimistic concurrency.
     type Version: PartialOrd + Ord + Default + Copy;
 
     /// Appends a new list of [`Event`](EventStore::Event)s to the Event Store,

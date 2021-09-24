@@ -108,7 +108,7 @@ where
 {
     /// Builds a new [`AggregateRoot`] instance for the specified [`Aggregate`]
     /// [`Id`](Aggregate::Id).
-    // #[inline]
+    #[inline]
     pub fn build<V: PartialOrd + Ord + Default + Copy>(&self, id: T::Id) -> AggregateRoot<T, V> {
         self.build_with_state(id, Default::default(), Default::default())
     }

@@ -57,7 +57,7 @@ pub trait EventSubscriber {
     /// channel.
     type Error;
 
-    /// Version type used by the [`EventStore`] for optimistic concurrency.
+    /// Version type used for optimistic concurrency.
     type Version: PartialOrd + Ord + Default + Copy;
 
     /// Subscribes to all new events persisted in the [`EventStore`], from
@@ -122,7 +122,7 @@ pub trait Subscription {
     /// channel.
     type Error;
 
-    /// Version type used by the [`EventStore`] for optimistic concurrency.
+    /// Version type used for optimistic concurrency.
     type Version: PartialOrd + Ord + Default + Copy;
 
     /// Resumes the current state of a `Subscription` by returning the
