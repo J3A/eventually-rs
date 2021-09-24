@@ -267,11 +267,12 @@ where
     type SourceId = Id;
     type Event = Event;
     type Error = Error;
+    type Version = u32;
 
     fn append(
         &mut self,
         id: Self::SourceId,
-        version: Expected,
+        version: Expected<Self::Version>,
         events: Vec<Self::Event>,
     ) -> BoxFuture<Result<u32>> {
         #[cfg(feature = "with-tracing")]

@@ -67,14 +67,14 @@ async fn different_types_can_share_id() {
         .append(shared_id.to_owned(), Expected::Exact(0), vec![Ivent::A(1)])
         .await
         .expect("Failed appending ivents");
-    let ivents: Vec<Persisted<String, Ivent>> = ivent_store
+    let ivents: Vec<Persisted<String, Ivent, u32>> = ivent_store
         .stream_all(Select::All)
         .await
         .expect("failed to create first stream")
         .try_collect()
         .await
         .expect("failed to collect ivents from subscription");
-    let events: Vec<Persisted<String, Event>> = event_store
+    let events: Vec<Persisted<String, Event, u32>> = event_store
         .stream_all(Select::All)
         .await
         .expect("failed to create second stream")
@@ -151,7 +151,7 @@ async fn stream_all_works() {
         .expect("failed while appending events");
 
     // Select::All returns all the events.
-    let events: Vec<Persisted<String, Event>> = event_store
+    let events: Vec<Persisted<String, Event, u32>> = event_store
         .stream_all(Select::All)
         .await
         .expect("failed to create first stream")
@@ -185,7 +185,7 @@ async fn stream_all_works() {
 
     // Select::From returns a slice of the events by their sequence number,
     // in this case it will return only events coming from the second source.
-    let events: Vec<Persisted<String, Event>> = event_store
+    let events: Vec<Persisted<String, Event, u32>> = event_store
         .stream_all(Select::From(3))
         .await
         .expect("failed to create second stream")
@@ -250,7 +250,7 @@ async fn stream_works() {
         .expect("failed while appending events");
 
     // Select::All returns all the events.
-    let events: Vec<Persisted<String, Event>> = event_store
+    let events: Vec<Persisted<String, Event, u32>> = event_store
         .stream(source_id.to_owned(), Select::All)
         .await
         .expect("failed to create first stream")
@@ -274,7 +274,7 @@ async fn stream_works() {
     );
 
     // Select::From returns a slice of the events by their version.
-    let events: Vec<Persisted<String, Event>> = event_store
+    let events: Vec<Persisted<String, Event, u32>> = event_store
         .stream(source_id.to_owned(), Select::From(3))
         .await
         .expect("failed to create second stream")

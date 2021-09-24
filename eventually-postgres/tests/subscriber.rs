@@ -148,7 +148,7 @@ async fn persistent_subscription_works() {
         .await
         .expect("failed while appending events");
 
-    let events: Vec<Persisted<String, Event>> = subscription
+    let events: Vec<Persisted<String, Event, u32>> = subscription
         .resume()
         .await
         .expect("failed to resume subscription")

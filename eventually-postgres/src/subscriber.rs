@@ -52,7 +52,7 @@ pub enum SubscriberError {
 /// [`EventStore`]: ../store/struct.EventStore.html
 #[derive(Clone)]
 pub struct EventSubscriber<Id, Event> {
-    tx: Sender<Result<Persisted<Id, Event>>>,
+    tx: Sender<Result<Persisted<Id, Event, u32>>>,
 }
 
 impl<Id, Event> EventSubscriber<Id, Event>
@@ -131,6 +131,7 @@ where
     type SourceId = Id;
     type Event = Event;
     type Error = SubscriberError;
+    type Version = u32;
 
     fn subscribe_all(&self) -> EventStream<Self> {
         BroadcastStream::new(self.tx.subscribe())
@@ -151,7 +152,7 @@ struct NotificationPayload<Event> {
     event: Event,
 }
 
-impl<SourceId, Event> TryFrom<NotificationPayload<Event>> for Persisted<SourceId, Event>
+impl<SourceId, Event> TryFrom<NotificationPayload<Event>> for Persisted<SourceId, Event, u32>
 where
     SourceId: TryFrom<String>,
     <SourceId as TryFrom<String>>::Error: std::error::Error + Send + Sync + 'static,

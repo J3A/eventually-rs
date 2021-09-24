@@ -158,6 +158,7 @@ where
     type SourceId = SourceId;
     type Event = Event;
     type Error = Error;
+    type Version = u32;
 
     fn resume(&self) -> BoxFuture<Result<SubscriptionStream<Self>, Self::Error>> {
         let fut = async move {
