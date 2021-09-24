@@ -13,14 +13,17 @@ use crate::versioning::Versioned;
 
 /// Selection operation for the events to capture in an [`EventStream`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Select {
+pub enum Select<T>
+where
+    T: PartialOrd + Ord,
+{
     /// To return all the [`Event`](EventStore::Event)s in the [`EventStream`].
     All,
 
     /// To return a slice of the [`EventStream`], starting from
     /// those [`Event`](EventStore::Event)s with version **greater or equal**
     /// than the one specified in this variant.
-    From(u32),
+    From(T),
 }
 
 /// Specifies the optimistic locking level when performing
@@ -131,7 +134,7 @@ pub trait EventStore {
     fn stream(
         &self,
         source_id: Self::SourceId,
-        select: Select,
+        select: Select<Self::Version>,
     ) -> BoxFuture<Result<EventStream<Self>, Self::Error>>;
 
     /// Streams a list of [`Event`](EventStore::Event)s from the [`EventStore`]
@@ -145,7 +148,7 @@ pub trait EventStore {
     /// [`Select`] specifies the selection strategy for the
     /// [`Event`](EventStore::Event)s in the returned [`EventStream`]: take
     /// a look at type documentation for all the available options.
-    fn stream_all(&self, select: Select) -> BoxFuture<Result<EventStream<Self>, Self::Error>>;
+    fn stream_all(&self, select: Select<u32>) -> BoxFuture<Result<EventStream<Self>, Self::Error>>;
 
     /// Drops all the [`Event`](EventStore::Event)s related to one `Source`,
     /// specified by the provided [`SourceId`](EventStore::SourceId).

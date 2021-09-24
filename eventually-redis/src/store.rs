@@ -133,7 +133,7 @@ where
     fn stream(
         &self,
         id: Self::SourceId,
-        select: Select,
+        select: Select<Self::Version>,
     ) -> BoxFuture<StoreResult<StoreEventStream<Self>>> {
         let fut = async move {
             let stream_name = format!("{}.{}", self.stream_name, id.to_string());
@@ -172,7 +172,7 @@ where
         Box::pin(fut)
     }
 
-    fn stream_all(&self, select: Select) -> BoxFuture<StoreResult<StoreEventStream<Self>>> {
+    fn stream_all(&self, select: Select<u32>) -> BoxFuture<StoreResult<StoreEventStream<Self>>> {
         let fut = async move {
             let paginator = stream::into_xrange_stream(
                 self.conn.clone(),

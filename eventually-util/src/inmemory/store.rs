@@ -224,7 +224,7 @@ where
     fn stream(
         &self,
         id: Self::SourceId,
-        select: Select,
+        select: Select<Self::Version>,
     ) -> BoxFuture<Result<EventStream<Self>, Self::Error>> {
         #[cfg(feature = "with-tracing")]
         let span = tracing::info_span!(
@@ -258,7 +258,7 @@ where
         Box::pin(fut)
     }
 
-    fn stream_all(&self, select: Select) -> BoxFuture<Result<EventStream<Self>, Self::Error>> {
+    fn stream_all(&self, select: Select<u32>) -> BoxFuture<Result<EventStream<Self>, Self::Error>> {
         #[cfg(feature = "with-tracing")]
         let span = tracing::info_span!(
             "EventStore::stream_all",
@@ -695,7 +695,7 @@ mod tests {
     async fn stream_to_vec(
         store: &InMemoryStore<&'static str, Event>,
         id: &'static str,
-        select: Select,
+        select: Select<u32>,
     ) -> anyhow::Result<Vec<Persisted<&'static str, Event, u32>>> {
         store
             .stream(id, select)

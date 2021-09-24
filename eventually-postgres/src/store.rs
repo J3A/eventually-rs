@@ -316,7 +316,11 @@ where
         Box::pin(fut)
     }
 
-    fn stream(&self, id: Self::SourceId, select: Select) -> BoxFuture<Result<EventStream<Self>>> {
+    fn stream(
+        &self,
+        id: Self::SourceId,
+        select: Select<Self::Version>,
+    ) -> BoxFuture<Result<EventStream<Self>>> {
         #[cfg(feature = "with-tracing")]
         let span = tracing::info_span!(
             "EventStore::stream",
@@ -343,7 +347,7 @@ where
         Box::pin(fut)
     }
 
-    fn stream_all(&self, select: Select) -> BoxFuture<Result<EventStream<Self>>> {
+    fn stream_all(&self, select: Select<u32>) -> BoxFuture<Result<EventStream<Self>>> {
         #[cfg(feature = "with-tracing")]
         let span = tracing::info_span!(
             "EventStore::stream_all",
