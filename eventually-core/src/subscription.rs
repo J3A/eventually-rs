@@ -19,7 +19,11 @@ use crate::store::{EventStore, Persisted, Select};
 pub type EventStream<'a, S> = BoxStream<
     'a,
     Result<
-        Persisted<<S as EventSubscriber>::SourceId, <S as EventSubscriber>::Event>,
+        Persisted<
+            <S as EventSubscriber>::SourceId,
+            <S as EventSubscriber>::Event,
+            <S as EventSubscriber>::Version,
+        >,
         <S as EventSubscriber>::Error,
     >,
 >;
@@ -53,6 +57,9 @@ pub trait EventSubscriber {
     /// channel.
     type Error;
 
+    /// Version type used by the [`EventStore`] for optimistic concurrency.
+    type Version: PartialOrd + Ord + Default;
+
     /// Subscribes to all new events persisted in the [`EventStore`], from
     /// the moment of calling this function, in the future.
     ///
@@ -80,7 +87,11 @@ pub trait EventSubscriber {
 pub type SubscriptionStream<'a, S> = BoxStream<
     'a,
     Result<
-        Persisted<<S as Subscription>::SourceId, <S as Subscription>::Event>,
+        Persisted<
+            <S as Subscription>::SourceId,
+            <S as Subscription>::Event,
+            <S as Subscription>::Version,
+        >,
         <S as Subscription>::Error,
     >,
 >;
@@ -110,6 +121,9 @@ pub trait Subscription {
     /// Possible errors returned when receiving events from the notification
     /// channel.
     type Error;
+
+    /// Version type used by the [`EventStore`] for optimistic concurrency.
+    type Version: PartialOrd + Ord + Default;
 
     /// Resumes the current state of a `Subscription` by returning the
     /// [`EventStream`], starting from the last event processed by the
@@ -189,16 +203,19 @@ where
     Subscriber: EventSubscriber<
             SourceId = <Store as EventStore>::SourceId,
             Event = <Store as EventStore>::Event,
+            Version = <Store as EventStore>::Version,
         > + Send
         + Sync,
     <Store as EventStore>::SourceId: Send + Sync,
     <Store as EventStore>::Event: Send + Sync,
     <Store as EventStore>::Error: StdError + Send + Sync + 'static,
+    <Store as EventStore>::Version: Send + Sync,
     <Subscriber as EventSubscriber>::Error: StdError + Send + Sync + 'static,
 {
     type SourceId = Store::SourceId;
     type Event = Store::Event;
     type Error = Error;
+    type Version = Store::Version;
 
     fn resume(&self) -> BoxFuture<Result<SubscriptionStream<Self>, Self::Error>> {
         Box::pin(async move {

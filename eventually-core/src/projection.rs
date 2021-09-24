@@ -38,10 +38,13 @@ pub trait Projection {
     /// the next state.
     type Error;
 
+    /// Version type used by the [`EventStore`] for optimistic concurrency.
+    type Version: PartialOrd + Ord + Default;
+
     /// Updates the next value of the `Projection` using the provided event
     /// value.
     async fn project(
         &mut self,
-        event: Persisted<Self::SourceId, Self::Event>,
+        event: Persisted<Self::SourceId, Self::Event, Self::Version>,
     ) -> Result<(), Self::Error>;
 }

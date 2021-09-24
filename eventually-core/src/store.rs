@@ -28,7 +28,10 @@ pub enum Select {
 ///
 /// Check out [`append`](EventStore::append) documentation for more info.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Expected {
+pub enum Expected<V>
+where
+    V: PartialOrd + Ord + Default,
+{
     /// Append events disregarding the current
     /// [`Aggregate`](super::aggregate::Aggregate) version.
     Any,
@@ -36,14 +39,18 @@ pub enum Expected {
     /// Append events only if the current version of the
     /// [`Aggregate`](super::aggregate::Aggregate) is the one specified by
     /// the value provided here.
-    Exact(u32),
+    Exact(V),
 }
 
 /// Stream type returned by the [`EventStore::stream`] method.
 pub type EventStream<'a, S> = BoxStream<
     'a,
     Result<
-        Persisted<<S as EventStore>::SourceId, <S as EventStore>::Event>,
+        Persisted<
+            <S as EventStore>::SourceId,
+            <S as EventStore>::Event,
+            <S as EventStore>::Version,
+        >,
         <S as EventStore>::Error,
     >,
 >;
@@ -78,6 +85,9 @@ pub trait EventStore {
     /// operations.
     type Error: AppendError;
 
+    /// Version type used by the [`EventStore`] for optimistic concurrency.
+    type Version: PartialOrd + Ord + Default;
+
     /// Appends a new list of [`Event`](EventStore::Event)s to the Event Store,
     /// for the Source entity specified by
     /// [`SourceId`](EventStore::SourceId).
@@ -104,9 +114,9 @@ pub trait EventStore {
     fn append(
         &mut self,
         source_id: Self::SourceId,
-        version: Expected,
+        version: Expected<Self::Version>,
         events: Vec<Self::Event>,
-    ) -> BoxFuture<Result<u32, Self::Error>>;
+    ) -> BoxFuture<Result<Self::Version, Self::Error>>;
 
     /// Streams a list of [`Event`](EventStore::Event)s from the [`EventStore`]
     /// back to the application, by specifying the desired
@@ -150,22 +160,30 @@ pub trait EventStore {
 /// [`EventStream`]s are composed of these events.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Persisted<SourceId, T> {
+pub struct Persisted<SourceId, T, V> {
     source_id: SourceId,
-    version: u32,
+    version: V,
     sequence_number: u32,
     #[cfg_attr(feature = "serde", serde(flatten))]
     event: T,
 }
 
-impl<SourceId, T> Versioned for Persisted<SourceId, T> {
+impl<SourceId, T, V> Versioned<V> for Persisted<SourceId, T, V>
+where
+    V: PartialOrd + Ord + Default,
+{
     #[inline]
-    fn version(&self) -> u32 {
-        self.version
+    fn version(&self) -> V {
+        todo!()
+        // self.version
+    }
+
+    fn min_version(&self) -> V {
+        todo!()
     }
 }
 
-impl<SourceId, T> Deref for Persisted<SourceId, T> {
+impl<SourceId, T, V> Deref for Persisted<SourceId, T, V> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -173,7 +191,7 @@ impl<SourceId, T> Deref for Persisted<SourceId, T> {
     }
 }
 
-impl<SourceId, T> Persisted<SourceId, T> {
+impl<SourceId, T, V> Persisted<SourceId, T, V> {
     /// Creates a new [`EventBuilder`](persistent::EventBuilder) from the
     /// provided Event value.
     #[inline]
@@ -222,7 +240,10 @@ pub mod persistent {
         /// Specifies the [`Persisted`](super::Persisted) version and moves to
         /// the next builder state.
         #[inline]
-        pub fn version(self, value: u32) -> EventBuilderWithVersion<SourceId, T> {
+        pub fn version<V: PartialOrd + Ord + Default>(
+            self,
+            value: V,
+        ) -> EventBuilderWithVersion<SourceId, T, V> {
             EventBuilderWithVersion {
                 version: value,
                 event: self.event,
@@ -244,17 +265,23 @@ pub mod persistent {
 
     /// Next step in creating a new [`Persisted`](super::Persisted) carrying an
     /// Event value and its version.
-    pub struct EventBuilderWithVersion<SourceId, T> {
-        version: u32,
+    pub struct EventBuilderWithVersion<SourceId, T, V>
+    where
+        V: PartialOrd + Ord + Default,
+    {
+        version: V,
         event: T,
         source_id: SourceId,
     }
 
-    impl<SourceId, T> EventBuilderWithVersion<SourceId, T> {
+    impl<SourceId, T, V> EventBuilderWithVersion<SourceId, T, V>
+    where
+        V: PartialOrd + Ord + Default,
+    {
         /// Specifies the [`Persisted`](super::Persisted) sequence number and
         /// moves to the next builder state.
         #[inline]
-        pub fn sequence_number(self, value: u32) -> super::Persisted<SourceId, T> {
+        pub fn sequence_number(self, value: u32) -> super::Persisted<SourceId, T, V> {
             super::Persisted {
                 version: self.version,
                 event: self.event,
@@ -276,7 +303,10 @@ pub mod persistent {
         /// Specifies the [`Persisted`](super::Persisted) version and moves to
         /// the next builder state.
         #[inline]
-        pub fn version(self, value: u32) -> super::Persisted<SourceId, T> {
+        pub fn version<V: PartialOrd + Ord + Default>(
+            self,
+            value: V,
+        ) -> super::Persisted<SourceId, T, V> {
             super::Persisted {
                 version: value,
                 event: self.event,

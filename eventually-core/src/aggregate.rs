@@ -108,15 +108,20 @@ where
 {
     /// Builds a new [`AggregateRoot`] instance for the specified [`Aggregate`]
     /// [`Id`](Aggregate::Id).
-    #[inline]
-    pub fn build(&self, id: T::Id) -> AggregateRoot<T> {
-        self.build_with_state(id, 0, Default::default())
+    // #[inline]
+    pub fn build<V: PartialOrd + Ord + Default>(&self, id: T::Id) -> AggregateRoot<T, V> {
+        self.build_with_state(id, Default::default(), Default::default())
     }
 
     /// Builds a new [`AggregateRoot`] instance for the specified Aggregate
     /// with a specified [`State`](Aggregate::State) value.
     #[inline]
-    pub fn build_with_state(&self, id: T::Id, version: u32, state: T::State) -> AggregateRoot<T> {
+    pub fn build_with_state<V: PartialOrd + Ord + Default>(
+        &self,
+        id: T::Id,
+        version: V,
+        state: T::State,
+    ) -> AggregateRoot<T, V> {
         AggregateRoot {
             id,
             version,
@@ -145,12 +150,13 @@ where
 
 #[derive(Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
-pub struct AggregateRoot<T>
+pub struct AggregateRoot<T, V>
 where
     T: Aggregate + 'static,
+    V: PartialOrd + Ord + Default,
 {
     id: T::Id,
-    version: u32,
+    version: V,
 
     #[cfg_attr(feature = "serde", serde(flatten))]
     state: T::State,
@@ -162,9 +168,10 @@ where
     to_commit: Option<Vec<T::Event>>,
 }
 
-impl<T> PartialEq for AggregateRoot<T>
+impl<T, V> PartialEq for AggregateRoot<T, V>
 where
     T: Aggregate,
+    V: PartialOrd + Ord + Default,
 {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
@@ -172,19 +179,26 @@ where
     }
 }
 
-impl<T> Versioned for AggregateRoot<T>
+impl<T, V> Versioned<V> for AggregateRoot<T, V>
 where
     T: Aggregate,
+    V: PartialOrd + Ord + Default,
 {
     #[inline]
-    fn version(&self) -> u32 {
-        self.version
+    fn version(&self) -> V {
+        // self.version
+        todo!()
+    }
+
+    fn min_version(&self) -> V {
+        todo!()
     }
 }
 
-impl<T> AggregateRoot<T>
+impl<T, V> AggregateRoot<T, V>
 where
     T: Aggregate,
+    V: PartialOrd + Ord + Default,
 {
     /// Returns a reference to the Aggregate [`Id`](Aggregate::Id) that
     /// represents the entity wrapped by this [`AggregateRoot`] instance.
@@ -209,15 +223,16 @@ where
 
     /// Returns a new [`AggregateRoot`] having the specified version.
     #[inline]
-    pub(crate) fn with_version(mut self, version: u32) -> Self {
+    pub(crate) fn with_version(mut self, version: V) -> Self {
         self.version = version;
         self
     }
 }
 
-impl<T> Deref for AggregateRoot<T>
+impl<T, V> Deref for AggregateRoot<T, V>
 where
     T: Aggregate,
+    V: PartialOrd + Ord + Default,
 {
     type Target = T::State;
 
@@ -226,12 +241,13 @@ where
     }
 }
 
-impl<T> AggregateRoot<T>
+impl<T, V> AggregateRoot<T, V>
 where
     T: Aggregate,
     T::Event: Clone,
     T::State: Clone,
     T::Command: Debug,
+    V: PartialOrd + Ord + Default,
 {
     /// Handles the submitted [`Command`](Aggregate::Command) using the
     /// [`Aggregate::handle`] method and updates the Aggregate

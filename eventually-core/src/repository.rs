@@ -102,7 +102,7 @@ where
         feature = "with-tracing",
         tracing::instrument(level = "info", name = "Repository::get", skip(self))
     )]
-    pub async fn get(&self, id: T::Id) -> Result<AggregateRoot<T>, T, Store> {
+    pub async fn get(&self, id: T::Id) -> Result<AggregateRoot<T, Store::Version>, T, Store> {
         self.store
             .stream(id.clone(), Select::All)
             .await
@@ -111,7 +111,7 @@ where
             .map_err(Error::Store)
             // Try to fold all the Events into an Aggregate State.
             .try_fold(
-                (0, T::State::default()),
+                (Store::Version::default(), T::State::default()),
                 |(version, state), event| async move {
                     // Always consider the max version number for the next version.
                     let new_version = std::cmp::max(event.version(), version);
@@ -141,7 +141,10 @@ where
         feature = "with-tracing",
         tracing::instrument(level = "info", name = "Repository::add", skip(self, root))
     )]
-    pub async fn add(&mut self, mut root: AggregateRoot<T>) -> Result<AggregateRoot<T>, T, Store> {
+    pub async fn add(
+        &mut self,
+        mut root: AggregateRoot<T, Store::Version>,
+    ) -> Result<AggregateRoot<T, Store::Version>, T, Store> {
         let mut version = root.version();
         let events_to_commit = root.take_events_to_commit();
 
